@@ -86,6 +86,15 @@
       <main class="scroll" id="practice"></main>
     </section>
 
+    <!-- 드라이브 모드 -->
+    <section class="screen" id="screen-drive" hidden>
+      <header class="topbar big">
+        <h1>드라이브</h1>
+        <p class="sub">화면 안 보고 듣고 말하기</p>
+      </header>
+      <main class="scroll" id="drive"></main>
+    </section>
+
     <!-- 하단 플레이어 (상세 화면에서만) -->
     <div class="player" id="player" hidden>
       <div class="p-progress"><input type="range" id="p-range" min="0" max="1000" value="0" aria-label="재생 위치"></div>
@@ -112,6 +121,10 @@
       <a href="#practice" class="tab" data-tab="practice">
         <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="9" cy="9" r="1.4" fill="currentColor"/><circle cx="15" cy="15" r="1.4" fill="currentColor"/><circle cx="15" cy="9" r="1.4" fill="currentColor"/><circle cx="9" cy="15" r="1.4" fill="currentColor"/></svg>
         <span>랜덤 연습</span>
+      </a>
+      <a href="#drive" class="tab" data-tab="drive">
+        <svg viewBox="0 0 24 24"><path d="M5 16V11l2-5h10l2 5v5M5 16h14M5 16v2.5M19 16v2.5M5 11h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="8" cy="13.6" r="1.2" fill="currentColor"/><circle cx="16" cy="13.6" r="1.2" fill="currentColor"/></svg>
+        <span>드라이브</span>
       </a>
     </nav>
   </div>

@@ -273,6 +273,289 @@ function renderPractice() {
   $("#t-next").onclick = renderPractice;
 }
 
+/* ---------- drive mode ---------- */
+// 문항마다: 질문(TTS) → 10초 정적(소리 내서 답해보기) → 내 녹음(모범답안) → 다음 문항
+const THINK_SEC = 10, GAP_MS = 1500;
+const driveAudio = new Audio(); driveAudio.preload = "auto";
+// 질문·정적 구간에도 오디오 세션을 살려두기 위한 무음 루프 (블루투스/핸들 버튼, 잠금화면 컨트롤 유지)
+const keeper = new Audio(); keeper.loop = true; keeper.src = (() => {
+  const sr = 8000, n = sr, buf = new ArrayBuffer(44 + n * 2), v = new DataView(buf);
+  const w = (o, str) => { for (let i = 0; i < str.length; i++) v.setUint8(o + i, str.charCodeAt(i)); };
+  w(0, "RIFF"); v.setUint32(4, 36 + n * 2, true); w(8, "WAVE"); w(12, "fmt ");
+  v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+  v.setUint32(24, sr, true); v.setUint32(28, sr * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+  w(36, "data"); v.setUint32(40, n * 2, true);
+  return URL.createObjectURL(new Blob([buf], { type: "audio/wav" }));
+})();
+
+const Drive = { running: false, paused: false, list: [], idx: 0, phase: "question", token: 0, left: THINK_SEC, wake: null, waiters: new Set(), opts: null };
+const dIcon = {
+  prev: '<svg viewBox="0 0 24 24"><path d="M6 5v14M19 5L9 12l10 7z" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>',
+  next: '<svg viewBox="0 0 24 24"><path d="M18 5v14M5 5l10 7-10 7z" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>',
+  play: ICON.play, pause: ICON.pause,
+  speak: '<svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>'
+};
+
+const driveKey = k => `drive.${k}.${Auth.current() || ""}`;
+function allItems() { return DATA.topics.flatMap(t => t.items.map(it => byId.get(it.id)).filter(Boolean)); }
+function getSel() {
+  const all = allItems().map(i => i.id);
+  try { const s = JSON.parse(store.get(driveKey("sel"), "null")); if (Array.isArray(s)) return new Set(s.filter(id => byId.has(id))); } catch (e) {}
+  return new Set(all);
+}
+function getOpt(k, d) { return store.get(driveKey(k), d); }
+
+/* ----- 설정 화면 ----- */
+function renderDriveSetup() {
+  const root = $("#drive");
+  const items = allItems();
+  if (!items.length) { root.innerHTML = '<div class="empty">아직 스크립트가 없어요</div>'; return; }
+  const sel = getSel();
+  const order = getOpt("order", "seq"), loop = getOpt("loop", "stop");
+  root.innerHTML = `
+    <div class="dcard">
+      <div class="dh"><b>범위</b><button class="link" id="d-all" type="button"></button></div>
+      ${DATA.topics.map(t => `
+        <div class="dtopic">
+          <div class="dt-row">
+            <label class="chk"><input type="checkbox" data-topic="${esc(t.id)}"><span>${esc(t.emoji || "")} ${esc(t.name)}</span></label>
+            <span class="cnt" data-cnt="${esc(t.id)}"></span>
+            <button class="dt-exp" type="button" data-exp="${esc(t.id)}" aria-label="문항 펼치기">${ICON.chev}</button>
+          </div>
+          <div class="dt-items" data-items="${esc(t.id)}" hidden>
+            ${t.items.map(it => `<label class="chk sub"><input type="checkbox" data-item="${esc(it.id)}"><span>Q${esc(it.no)} ${esc(it.title)}${it.audio ? "" : ' <em>녹음 없음</em>'}</span></label>`).join("")}
+          </div>
+        </div>`).join("")}
+    </div>
+    <div class="dcard">
+      <div class="dh"><b>순서</b></div>
+      <div class="seg two" id="d-order"><button type="button" data-v="seq">순서대로</button><button type="button" data-v="rand">랜덤</button></div>
+      <div class="dh"><b>다 끝나면</b></div>
+      <div class="seg two" id="d-loop"><button type="button" data-v="stop">멈춤</button><button type="button" data-v="loop">처음부터 반복</button></div>
+    </div>
+    <div class="dsum" id="d-sum"></div>
+    <button class="btn primary wide dbig" id="d-start" type="button">시작</button>
+    <p class="dnote">문항마다 <b>질문 → ${THINK_SEC}초 동안 소리 내서 답해보기 → 내 녹음</b> 순서로 흘러가요.<br>
+      출발 전에 시작하고, 운전 중엔 화면을 보지 마세요. 화면은 켜진 채로 유지돼요.<br>
+      차 블루투스·핸들 버튼으로 다음/이전/일시정지가 될 수 있어요 (차·기기마다 다름).</p>`;
+
+  const refresh = () => {
+    DATA.topics.forEach(t => {
+      const ids = t.items.map(i => i.id), n = ids.filter(id => sel.has(id)).length;
+      const tc = root.querySelector(`[data-topic="${t.id}"]`);
+      tc.checked = n === ids.length && n > 0; tc.indeterminate = n > 0 && n < ids.length;
+      root.querySelector(`[data-cnt="${t.id}"]`).textContent = `${n}/${ids.length}`;
+    });
+    root.querySelectorAll("[data-item]").forEach(c => c.checked = sel.has(c.dataset.item));
+    const chosen = items.filter(i => sel.has(i.id));
+    const sec = chosen.reduce((s, i) => s + 8 + THINK_SEC + (i.audio ? 50 : 0) + GAP_MS / 1000, 0);
+    $("#d-sum").innerHTML = chosen.length ? `선택 <b>${chosen.length}문항</b> · 한 바퀴 약 ${Math.max(1, Math.round(sec / 60))}분` : "범위를 선택해주세요";
+    $("#d-start").disabled = !chosen.length;
+    $("#d-all").textContent = sel.size === items.length ? "전체 해제" : "전체 선택";
+    store.set(driveKey("sel"), JSON.stringify([...sel]));
+  };
+  root.querySelectorAll("[data-topic]").forEach(c => c.onchange = () => {
+    const t = DATA.topics.find(x => x.id === c.dataset.topic);
+    t.items.forEach(i => c.checked ? sel.add(i.id) : sel.delete(i.id)); refresh();
+  });
+  root.querySelectorAll("[data-item]").forEach(c => c.onchange = () => { c.checked ? sel.add(c.dataset.item) : sel.delete(c.dataset.item); refresh(); });
+  root.querySelectorAll("[data-exp]").forEach(b => b.onclick = () => {
+    const box = root.querySelector(`[data-items="${b.dataset.exp}"]`); box.hidden = !box.hidden; b.classList.toggle("open", !box.hidden);
+  });
+  $("#d-all").onclick = () => { if (sel.size === items.length) sel.clear(); else items.forEach(i => sel.add(i.id)); refresh(); };
+  const seg = (id, key, val) => {
+    const el = $(id), set = v => { el.querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.v === v)); store.set(driveKey(key), v); };
+    el.querySelectorAll("button").forEach(b => b.onclick = () => set(b.dataset.v)); set(val);
+  };
+  seg("#d-order", "order", order); seg("#d-loop", "loop", loop);
+  $("#d-start").onclick = driveStart;
+  refresh();
+}
+
+/* ----- 재생 엔진 ----- */
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+function buildList() {
+  const sel = getSel(); const list = allItems().filter(i => sel.has(i.id));
+  return Drive.opts.order === "rand" ? shuffle(list) : list;
+}
+const alive = my => Drive.running && !Drive.paused && my === Drive.token;
+// 취소 가능한 대기: abortWaits() 하면 false로 끝남
+const until = fn => new Promise(res => { const done = v => { Drive.waiters.delete(done); res(v); }; Drive.waiters.add(done); fn(done); });
+function abortWaits() { [...Drive.waiters].forEach(w => w(false)); }
+const sleep = ms => until(done => { setTimeout(() => done(true), ms); });
+
+function keepAlive(on) { if (on) keeper.play().catch(() => {}); else keeper.pause(); }
+
+async function driveStart() {
+  Drive.opts = { order: getOpt("order", "seq"), loop: getOpt("loop", "stop") };
+  Drive.list = buildList(); if (!Drive.list.length) return;
+  Drive.running = true; Drive.paused = false; Drive.idx = 0; Drive.phase = "question"; Drive.left = THINK_SEC;
+  audio.pause();
+  // iOS: 사용자 탭 안에서 오디오 재생 권한을 열어둔다
+  try { driveAudio.src = keeper.src; await driveAudio.play(); driveAudio.pause(); } catch (e) {}
+  keepAlive(true); wakeOn(); mediaOn();
+  renderDrivePlayer();
+  runFrom("question");
+}
+
+async function runFrom(phase) {
+  const my = ++Drive.token; abortWaits();
+  const it = Drive.list[Drive.idx];
+  if (phase === "question") {
+    setPhase("question"); keepAlive(true);
+    await sayQuestion(it.question);
+    if (!alive(my)) return;
+    phase = "think"; Drive.left = THINK_SEC;
+  }
+  if (phase === "think") {
+    setPhase("think"); keepAlive(true);
+    while (Drive.left > 0) {
+      paintBig();
+      const ok = await sleep(1000); if (!ok || !alive(my)) return;
+      Drive.left--;
+    }
+    phase = "answer"; resetModel(it);
+  }
+  if (phase === "answer") {
+    if (it.audio) {
+      setPhase("answer"); keepAlive(false);
+      const ok = await until(done => {
+        const end = () => { driveAudio.onended = driveAudio.onerror = null; done(true); };
+        driveAudio.onended = end; driveAudio.onerror = end;
+        driveAudio.play().catch(end);
+      });
+      if (!ok || !alive(my)) return;
+      keepAlive(true);
+    }
+    phase = "gap";
+  }
+  if (phase === "gap") {
+    setPhase("gap"); keepAlive(true);
+    const ok = await sleep(GAP_MS); if (!ok || !alive(my)) return;
+    driveGoto(Drive.idx + 1);
+  }
+}
+function resetModel(it) {
+  if (!it.audio) return;
+  const abs = new URL(it.audio, location.href).href;
+  if (driveAudio.src !== abs) driveAudio.src = it.audio;
+  try { driveAudio.currentTime = 0; } catch (e) {}
+}
+
+function interrupt() { Drive.token++; abortWaits(); TTS.stop(); driveAudio.pause(); driveAudio.onended = driveAudio.onerror = null; }
+function driveGoto(i) {
+  interrupt();
+  if (i >= Drive.list.length) {
+    if (Drive.opts.loop === "loop") { Drive.list = buildList(); i = 0; }
+    else return driveFinish();
+  }
+  Drive.idx = Math.max(0, i); Drive.phase = "question"; Drive.left = THINK_SEC;
+  resetModel(Drive.list[Drive.idx]);
+  if (Drive.paused) { setPhase("question"); return; }
+  runFrom("question");
+}
+function drivePause() {
+  if (!Drive.running || Drive.paused) return;
+  Drive.paused = true; interrupt(); keepAlive(false);
+  if (Drive.phase === "question") Drive.left = THINK_SEC; // 질문 도중이면 질문부터 다시
+  setPhase(Drive.phase);
+}
+function driveResume() {
+  if (!Drive.running || !Drive.paused) return;
+  Drive.paused = false; keepAlive(true); wakeOn();
+  runFrom(Drive.phase);
+}
+function driveStop() {
+  if (!Drive.running) return;
+  interrupt(); Drive.running = false; Drive.paused = false; keepAlive(false); wakeOff(); mediaOff();
+}
+function driveFinish() {
+  const n = Drive.list.length; driveStop();
+  $("#drive").innerHTML = `
+    <div class="dplay done">
+      <div class="dp-big">🎉</div>
+      <div class="dp-phase">${n}문항 다 들었어요</div>
+      <button class="btn primary wide dbig" id="d-again" type="button">한 번 더</button>
+      <button class="btn wide" id="d-setup" type="button">범위 다시 고르기</button>
+    </div>`;
+  $("#d-again").onclick = driveStart; $("#d-setup").onclick = renderDriveSetup;
+}
+
+/* ----- 재생 화면 ----- */
+const PHASE_LABEL = { question: "질문 듣는 중", think: "소리 내서 답해보세요", answer: "모범답안 (내 녹음)", gap: "다음 문항으로" };
+function renderDrivePlayer() {
+  $("#drive").innerHTML = `
+    <div class="dplay" id="dplay">
+      <div class="dp-count" id="dp-count"></div>
+      <div class="dp-phase" id="dp-phase"></div>
+      <div class="dp-big" id="dp-big"></div>
+      <div class="dp-title" id="dp-title"></div>
+      <div class="dp-ctrls">
+        <button class="dp-btn" id="dp-prev" type="button" aria-label="이전 문항">${dIcon.prev}</button>
+        <button class="dp-btn main" id="dp-toggle" type="button" aria-label="일시정지"></button>
+        <button class="dp-btn" id="dp-next" type="button" aria-label="다음 문항">${dIcon.next}</button>
+      </div>
+      <button class="btn wide" id="dp-stop" type="button">종료</button>
+    </div>`;
+  $("#dp-prev").onclick = () => driveGoto(Drive.idx - 1);
+  $("#dp-next").onclick = () => driveGoto(Drive.idx + 1);
+  $("#dp-toggle").onclick = () => Drive.paused ? driveResume() : drivePause();
+  $("#dp-stop").onclick = () => { driveStop(); renderDriveSetup(); };
+}
+function setPhase(ph) {
+  Drive.phase = ph;
+  const box = $("#dplay"); if (!box) return;
+  const it = Drive.list[Drive.idx];
+  box.dataset.phase = Drive.paused ? "paused" : ph;
+  $("#dp-count").textContent = `${Drive.idx + 1} / ${Drive.list.length}`;
+  $("#dp-phase").textContent = Drive.paused ? "일시정지" : PHASE_LABEL[ph];
+  const reveal = ph === "answer" || ph === "gap";
+  $("#dp-title").textContent = reveal ? `${it.topicName} · Q${it.no} ${it.title}` : "";
+  $("#dp-toggle").innerHTML = Drive.paused ? dIcon.play : dIcon.pause;
+  $("#dp-toggle").setAttribute("aria-label", Drive.paused ? "재생" : "일시정지");
+  paintBig(); mediaMeta();
+}
+function paintBig() {
+  const big = $("#dp-big"); if (!big) return;
+  const ph = Drive.phase;
+  if (ph === "think") big.textContent = Drive.left;
+  else if (ph === "answer") big.textContent = fmt(Math.max(0, (driveAudio.duration || 0) - driveAudio.currentTime));
+  else if (ph === "question") big.innerHTML = dIcon.speak;
+  else big.textContent = "…";
+}
+driveAudio.addEventListener("timeupdate", () => { if (Drive.running && Drive.phase === "answer") paintBig(); });
+
+/* ----- 화면 켜짐 유지 ----- */
+async function wakeOn() { try { if ("wakeLock" in navigator && !(Drive.wake && !Drive.wake.released)) Drive.wake = await navigator.wakeLock.request("screen"); } catch (e) {} }
+function wakeOff() { try { Drive.wake && Drive.wake.release(); } catch (e) {} Drive.wake = null; }
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && Drive.running) wakeOn(); });
+
+/* ----- 블루투스·핸들·잠금화면 버튼 ----- */
+function mediaOn() {
+  if (!("mediaSession" in navigator)) return;
+  const ms = navigator.mediaSession, h = (a, f) => { try { ms.setActionHandler(a, f); } catch (e) {} };
+  h("play", driveResume); h("pause", drivePause);
+  h("nexttrack", () => driveGoto(Drive.idx + 1)); h("previoustrack", () => driveGoto(Drive.idx - 1));
+  h("stop", () => { driveStop(); renderDriveSetup(); });
+}
+function mediaOff() {
+  if (!("mediaSession" in navigator)) return;
+  ["play", "pause", "nexttrack", "previoustrack", "stop"].forEach(a => { try { navigator.mediaSession.setActionHandler(a, null); } catch (e) {} });
+  try { navigator.mediaSession.metadata = null; navigator.mediaSession.playbackState = "none"; } catch (e) {}
+}
+function mediaMeta() {
+  if (!("mediaSession" in navigator) || !Drive.running) return;
+  const it = Drive.list[Drive.idx], reveal = Drive.phase === "answer" || Drive.phase === "gap";
+  try {
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: reveal ? `Q${it.no} ${it.title}` : `${Drive.idx + 1} / ${Drive.list.length} · ${PHASE_LABEL[Drive.phase]}`,
+      artist: "OPIc 노트 · 드라이브", album: reveal ? it.topicName : "",
+      artwork: [{ src: new URL("icons/icon-512.png", location.href).href, sizes: "512x512", type: "image/png" }]
+    });
+    navigator.mediaSession.playbackState = Drive.paused ? "paused" : "playing";
+  } catch (e) {}
+}
+
 /* ---------- auth (브라우저 localStorage, base64 저장 — 보안 용도 아님, 공간 구분용) ---------- */
 const b64e = str => btoa(unescape(encodeURIComponent(str)));
 const b64d = str => { try { return decodeURIComponent(escape(atob(str))); } catch (e) { return ""; } };
@@ -326,7 +609,7 @@ $("#user-chip").onclick = () => openSheet(true);
 $("#sheet-close").onclick = () => openSheet(false);
 $("#user-sheet").onclick = e => { if (e.target.id === "user-sheet") openSheet(false); };
 $("#logout").onclick = () => {
-  openSheet(false); Auth.logout(); audio.pause(); stopTimer();
+  openSheet(false); driveStop(); Auth.logout(); audio.pause(); stopTimer();
   DATA = { topics: [] }; byId.clear();
   history.replaceState(null, "", location.pathname);
   showAuth();
@@ -334,7 +617,7 @@ $("#logout").onclick = () => {
 function showAuth() {
   document.body.classList.add("authing");
   loadAudio(null);
-  ["list", "detail", "practice"].forEach(n => $("#screen-" + n).hidden = true);
+  ["list", "detail", "practice", "drive"].forEach(n => $("#screen-" + n).hidden = true);
   $("#screen-auth").hidden = false;
   setAuthMode(Object.keys(Auth.accounts()).length ? "login" : "signup");
 }
@@ -342,14 +625,17 @@ function showAuth() {
 /* ---------- router ---------- */
 function show(name) {
   $("#screen-auth").hidden = true; document.body.classList.remove("authing");
-  ["list", "detail", "practice"].forEach(n => $("#screen-" + n).hidden = n !== name);
+  ["list", "detail", "practice", "drive"].forEach(n => $("#screen-" + n).hidden = n !== name);
   document.querySelectorAll(".tab").forEach(a => a.classList.toggle("on",
-    a.dataset.tab === (name === "practice" ? "practice" : "list")));
+    a.dataset.tab === (name === "practice" || name === "drive" ? name : "list")));
 }
 function route() {
+  const h = decodeURIComponent(location.hash.slice(1));
+  if (h === "drive" && Drive.running) { show("drive"); return; }  // 재생 중엔 그대로 유지
+  driveStop();
   TTS.stop();
   if (!Auth.current()) { showAuth(); return; }
-  const h = decodeURIComponent(location.hash.slice(1));
+  if (h === "drive") { loadAudio(null); stopTimer(); show("drive"); renderDriveSetup(); window.scrollTo(0, 0); return; }
   if (h === "practice") { loadAudio(null); show("practice"); renderPractice(); return; }
   stopTimer();
   if (h && byId.has(h)) { show("detail"); renderDetail(byId.get(h)); return; }
