@@ -186,9 +186,9 @@ function renderPractice() {
   root.innerHTML = `
     <div class="pcard">
       <div class="pmeta"><span class="pill">${esc(it.topicName)}</span><span class="pill">Q${esc(it.no)} ${esc(it.type || it.title)}</span></div>
-      <p class="pq">${esc(it.question)}</p>
+      ${TTS.ok ? "" : `<p class="pq">${esc(it.question)}</p>`}
       <div class="stage" id="stage">
-        <div class="stage-label" id="s-label">준비되면 시작</div>
+        <div class="stage-label" id="s-label">준비되면 시작 · 질문은 음성으로만 나와요</div>
         <div class="timer" id="t">0:00</div>
         <p class="timer-sub" id="s-sub">질문을 듣고 5초 안에 한 번 더 들을 수 있어요</p>
       </div>
@@ -200,7 +200,7 @@ function renderPractice() {
         <button class="btn wide" id="t-next">다음 문제</button>
       </div>
       <div class="pkw" id="t-kwbox" hidden><ol class="kw">${it.keywords.map(k => `<li><span>${md(k)}</span></li>`).join("")}</ol></div>
-      <div class="pkw script" id="t-scbox" hidden>${it.script.map(p => `<p>${md(p)}</p>`).join("")}</div>
+      <div class="pkw script" id="t-scbox" hidden><p class="question">${esc(it.question)}</p>${it.script.map(p => `<p>${md(p)}</p>`).join("")}</div>
     </div>`;
 
   const t = $("#t"), label = $("#s-label"), sub = $("#s-sub");
