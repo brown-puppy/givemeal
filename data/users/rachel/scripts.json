@@ -1,0 +1,33 @@
+{
+  "topics": [
+    {
+      "id": "home",
+      "name": "집",
+      "emoji": "🏠",
+      "items": [
+        {
+          "id": "home-1",
+          "no": 1,
+          "type": "묘사",
+          "title": "집 묘사",
+          "question": "You indicated in your background survey that you live in an apartment. Tell me about your home. What does it look like? What types of rooms does it have?",
+          "audio": "audio/rachel/home-1-describe.m4a",
+          "script": [
+            "I live in a small studio apartment in downtown Seoul. It's located in the center of Seoul.",
+            "Actually, I don't have a bedroom in my apartment because it's a small studio. But it has nice bathroom and a big kitchen area. My apartment is very clean and modern, so I really like my place. What makes my apartment special is a big window. Whenever I open it, I can get some fresh air. Also, the window lets in a lot of light, and that makes my studio super bright and cheerful.",
+            "So, anyway, my home is the best place for me to relax and chill out. I know my studio is very small, but it's cozy and comfortable."
+          ],
+          "keywords": [
+            "서울 도심 작은 원룸 (studio)",
+            "원룸이라 침실 없음",
+            "괜찮은 화장실 + 넓은 주방",
+            "깔끔하고 모던 → 내 집 좋아함",
+            "특별한 점: 큰 창문 → 열면 fresh air",
+            "햇빛 많이 들어옴 → bright and cheerful",
+            "마무리: relax and chill out · 작지만 cozy and comfortable"
+          ]
+        }
+      ]
+    }
+  ]
+}
