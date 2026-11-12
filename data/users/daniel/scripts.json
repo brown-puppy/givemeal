@@ -33,6 +33,101 @@
           "notes": "'I really love'가 두 번 나오면 내 방 쪽을 'It's perfect for that.'으로 바꿔도 됨."
         }
       ]
+    },
+    {
+      "id": "movie",
+      "name": "영화",
+      "emoji": "🎬",
+      "items": [
+        {
+          "id": "movie-1",
+          "no": 1,
+          "type": "묘사",
+          "title": "좋아하는 장르",
+          "question": "You indicated that you like to go to the movies. What kinds of movies do you like to watch? Why do you like that genre?",
+          "script": [
+            "I watch various kinds of movies, but my favorite genre is **science fiction**. I especially enjoy movies **set in space**.",
+            "What I like about them is their creative stories and impressive visuals. They allow me to **imagine worlds beyond everyday life** and explore ideas that I don't usually think about.",
+            "I also enjoy watching how the characters **deal with difficult situations**. For example, I recently watched Project Hail Mary, and I enjoyed it so much that I bought the original novel and finished reading it.",
+            "Overall, science fiction movies give me **both entertainment and something to think about**. That's why I enjoy this genre so much."
+          ],
+          "keywords": [
+            "여러 장르 보지만 최애는 SF · 특히 우주 배경",
+            "좋은 점: 창의적 스토리 + 영상미",
+            "일상 너머 세계 상상 · 평소 안 하던 생각",
+            "캐릭터가 어려운 상황 헤쳐나가는 모습",
+            "예시: 프로젝트 헤일메리 → 원작 소설 사서 완독",
+            "마무리: 재미 + 생각할 거리"
+          ]
+        },
+        {
+          "id": "movie-2",
+          "no": 2,
+          "type": "루틴",
+          "title": "영화 보러 갈 때 하는 일",
+          "question": "Tell me about what you usually do when you go to the movies. What do you do before and after the movie? Describe your routine in detail.",
+          "script": [
+            "I usually make plans with my family to **catch a movie** together at least once a month.",
+            "Before watching a movie, we **arrange the details**, like when and where to go, and which movie to watch. If needed, we also book our tickets in advance **to avoid any hassle**.",
+            "Well, once we get to the theater, we **grab some snacks** like popcorn and drinks. After that, we head to the restroom to make sure we're **all set** to enjoy the movie without interruptions.",
+            "After the movie, we often go for dinner and chat about it. We love discussing the storyline, characters, memorable scenes and so on.",
+            "Sometimes, if we feel too tired, we just **head straight home** instead."
+          ],
+          "keywords": [
+            "가족과 한 달에 한 번 이상 영화",
+            "전: 언제·어디·뭘 볼지 정하기 → 필요하면 예매 (avoid hassle)",
+            "극장 도착: 팝콘·음료 → 화장실 (all set)",
+            "(끝나면 자리 정리하고 짐 챙기기)",
+            "후: 저녁 먹으며 수다 → 스토리·캐릭터·명장면",
+            "피곤하면 바로 집으로"
+          ],
+          "notes": "원문 괄호 메모 '(clean up and pack up all items.)'는 여기로 옮겼어. 넣고 싶으면 4번째 문단 앞에 'When the movie ends, we clean up and pack up all our things.'로 말하면 돼."
+        },
+        {
+          "id": "movie-3",
+          "no": 3,
+          "type": "경험",
+          "title": "최근 영화 본 경험",
+          "question": "Tell me about the last time you went to the movies. What movie did you see, who did you go with, and what did you do? Tell me everything from beginning to end.",
+          "script": [
+            "The last time I went to the movies was a month ago. I went with my wife because we both wanted to see Project Hail Mary. Since it was a space movie, we decided to watch it **in IMAX** at the largest CGV in our neighborhood.",
+            "Well, once we got to the theater, we grabbed some snacks like popcorn and drinks. After that, we headed to the restroom to make sure we could enjoy the movie without interruptions. Then we found our seats and watched the movie. When it ended, we **cleaned up our area** and **gathered our belongings**.",
+            "After the movie, we went out for dinner and chatted about it. We discussed the storyline, the characters, and some memorable scenes. It was interesting to hear **which parts my wife enjoyed the most**.",
+            "Overall, it was a pretty enjoyable day!"
+          ],
+          "keywords": [
+            "한 달 전 · 아내와 · 프로젝트 헤일메리",
+            "우주 영화라 동네 제일 큰 CGV IMAX",
+            "팝콘·음료 → 화장실 → 자리 찾아 관람",
+            "끝나고 자리 정리 · 짐 챙기기",
+            "저녁 먹으며 스토리·캐릭터·명장면 얘기",
+            "아내가 어느 부분 제일 좋았는지 듣는 게 재밌었음",
+            "마무리: pretty enjoyable day"
+          ]
+        },
+        {
+          "id": "movie-4",
+          "no": 4,
+          "type": "돌발",
+          "title": "영화 관련 뉴스",
+          "question": "Tell me about a recent news story about a movie or an actor. What was the news about, and why was it interesting to you?",
+          "script": [
+            "I remember reading an article about Ryan Gosling, one of my favorite actors. I've enjoyed his movies for a long time, especially The Notebook and La La Land, so I was interested in hearing about his next movie.",
+            "The article said that he would **play the lead role** in Project Hail Mary, a science fiction movie **based on a novel**. Since I enjoy movies set in space, the news **immediately caught my attention**.",
+            "After hearing the news, I visited a bookstore and noticed copies of Project Hail Mary **on display everywhere**. What surprised me most was the cover. Instead of the original cover, the books had Ryan Gosling on the front. I thought it was interesting to see how the movie was changing **the way the book was presented**.",
+            "Seeing his face on the book cover made me even more interested in watching the movie. I was already a fan of his, but after that visit to the bookstore, I was **really looking forward to it**."
+          ],
+          "keywords": [
+            "라이언 고슬링 기사 · 최애 배우 (노트북, 라라랜드)",
+            "헤일메리 주연 · 소설 원작 SF",
+            "우주 영화 좋아해서 바로 관심",
+            "서점: 헤일메리 책이 곳곳에 진열",
+            "놀란 점: 표지가 원작 대신 고슬링 얼굴",
+            "영화가 책 보여주는 방식까지 바꿈",
+            "원래 팬 + 서점 이후 더 기대됨"
+          ]
+        }
+      ]
     }
   ]
 }
