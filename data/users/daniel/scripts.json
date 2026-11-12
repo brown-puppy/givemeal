@@ -45,6 +45,7 @@
           "type": "묘사",
           "title": "좋아하는 장르",
           "question": "You indicated that you like to go to the movies. What kinds of movies do you like to watch? Why do you like that genre?",
+          "audio": "audio/daniel/movie-1-genre.mp3",
           "script": [
             "I watch various kinds of movies, but my favorite genre is **science fiction**. I especially enjoy movies **set in space**.",
             "What I like about them is their creative stories and impressive visuals. They allow me to **imagine worlds beyond everyday life** and explore ideas that I don't usually think about.",
@@ -66,6 +67,7 @@
           "type": "루틴",
           "title": "영화 보러 갈 때 하는 일",
           "question": "Tell me about what you usually do when you go to the movies. What do you do before and after the movie? Describe your routine in detail.",
+          "audio": "audio/daniel/movie-2-routine.mp3",
           "script": [
             "I usually make plans with my family to **catch a movie** together at least once a month.",
             "Before watching a movie, we **arrange the details**, like when and where to go, and which movie to watch. If needed, we also book our tickets in advance **to avoid any hassle**.",
@@ -89,6 +91,7 @@
           "type": "경험",
           "title": "최근 영화 본 경험",
           "question": "Tell me about the last time you went to the movies. What movie did you see, who did you go with, and what did you do? Tell me everything from beginning to end.",
+          "audio": "audio/daniel/movie-3-recent.mp3",
           "script": [
             "The last time I went to the movies was a month ago. I went with my wife because we both wanted to see Project Hail Mary. Since it was a space movie, we decided to watch it **in IMAX** at the largest CGV in our neighborhood.",
             "Well, once we got to the theater, we grabbed some snacks like popcorn and drinks. After that, we headed to the restroom to make sure we could enjoy the movie without interruptions. Then we found our seats and watched the movie. When it ended, we **cleaned up our area** and **gathered our belongings**.",
@@ -111,6 +114,7 @@
           "type": "돌발",
           "title": "영화 관련 뉴스",
           "question": "Tell me about a recent news story about a movie or an actor. What was the news about, and why was it interesting to you?",
+          "audio": "audio/daniel/movie-4-news.mp3",
           "script": [
             "I remember reading an article about Ryan Gosling, one of my favorite actors. I've enjoyed his movies for a long time, especially The Notebook and La La Land, so I was interested in hearing about his next movie.",
             "The article said that he would **play the lead role** in Project Hail Mary, a science fiction movie **based on a novel**. Since I enjoy movies set in space, the news **immediately caught my attention**.",
