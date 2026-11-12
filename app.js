@@ -65,6 +65,35 @@ function loadAudio(src) {
   }
 }
 
+/* ---------- 질문 읽어주기 (브라우저 내장 TTS) ---------- */
+const TTS = {
+  ok: "speechSynthesis" in window,
+  voice: null,
+  pick() {
+    if (!this.ok) return null;
+    const vs = speechSynthesis.getVoices().filter(v => /^en[-_]US/i.test(v.lang));
+    const pref = ["Samantha", "Google US English", "Aria", "Jenny", "Ava", "Allison", "Zira"];
+    this.voice = pref.map(n => vs.find(v => v.name.includes(n))).find(Boolean) || vs.find(v => v.localService) || vs[0] || null;
+    return this.voice;
+  },
+  speak(text, btn) {
+    if (!this.ok) return;
+    if (speechSynthesis.speaking) { speechSynthesis.cancel(); if (btn && btn.classList.contains("on")) return; }
+    audio.pause();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = "en-US"; u.rate = 0.95;
+    if (this.voice || this.pick()) u.voice = this.voice;
+    const off = () => document.querySelectorAll(".q-say").forEach(b => b.classList.remove("on"));
+    off(); if (btn) btn.classList.add("on");
+    u.onend = u.onerror = off;
+    speechSynthesis.speak(u);
+  },
+  stop() { if (this.ok) speechSynthesis.cancel(); }
+};
+if (TTS.ok) speechSynthesis.onvoiceschanged = () => TTS.pick();
+const SAY_ICON = '<svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+const sayBtn = label => TTS.ok ? `<button class="q-say" type="button">${SAY_ICON}<span>${label}</span></button>` : "";
+
 /* ---------- list ---------- */
 function renderList() {
   const total = DATA.topics.reduce((n, t) => n + t.items.length, 0);
@@ -94,6 +123,7 @@ function renderDetail(it) {
   const root = $("#detail");
   root.innerHTML = `
     <p class="question">${esc(it.question)}</p>
+    ${sayBtn("질문 듣기")}
     <div class="seg" role="tablist">
       <button data-m="script">전문</button>
       <button data-m="kw">키워드</button>
@@ -101,6 +131,7 @@ function renderDetail(it) {
     </div>
     <div id="d-body"></div>
     ${it.notes ? `<div class="note"><b>메모</b> · ${md(it.notes)}</div>` : ""}`;
+  const qs = root.querySelector(".q-say"); if (qs) qs.onclick = () => TTS.speak(it.question, qs);
   const body = $("#d-body");
   const set = m => {
     mode = m; store.set("mode", m);
@@ -135,7 +166,8 @@ function renderPractice() {
   root.innerHTML = `
     <div class="pcard">
       <div class="pmeta"><span class="pill">${esc(it.topicName)}</span><span class="pill">Q${esc(it.no)} ${esc(it.type || it.title)}</span></div>
-      <p class="pq">${esc(it.question)}</p>
+      <p class="pq" id="pq">${esc(it.question)}</p>
+      ${sayBtn("질문 듣기")}
       <div class="timer" id="t">0:00</div>
       <p class="timer-sub">답변 목표 1:30 ~ 2:00</p>
       <div class="btns">
@@ -146,6 +178,7 @@ function renderPractice() {
       </div>
       <div class="pkw" id="t-kwbox" hidden><ol class="kw">${it.keywords.map(k => `<li><span>${md(k)}</span></li>`).join("")}</ol></div>
     </div>`;
+  const qs = root.querySelector(".q-say"); if (qs) qs.onclick = () => TTS.speak(it.question, qs);
   const t = $("#t"), start = $("#t-start");
   let t0 = 0;
   start.onclick = () => {
@@ -236,6 +269,7 @@ function show(name) {
     a.dataset.tab === (name === "practice" ? "practice" : "list")));
 }
 function route() {
+  TTS.stop();
   if (!Auth.current()) { showAuth(); return; }
   const h = decodeURIComponent(location.hash.slice(1));
   if (h === "practice") { loadAudio(null); show("practice"); renderPractice(); return; }

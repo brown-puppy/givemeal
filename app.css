@@ -109,6 +109,12 @@ body.has-player .tabbar{border-top:none}
 .btn.wide{grid-column:1 / -1}
 .btn:active{transform:scale(.98)}
 .pkw{margin-top:16px}
+.q-say{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--card);border-radius:999px;
+  padding:7px 14px 7px 10px;font-size:13px;font-weight:600;cursor:pointer;margin:-4px 0 16px}
+.q-say svg{width:18px;height:18px}
+.q-say.on{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.pcard .q-say{margin:14px 0 0}
+
 /* auth */
 .screen.auth{display:flex;align-items:center;justify-content:center;padding:calc(24px + var(--safe-t)) 20px calc(24px + var(--safe-b))}
 .auth-box{width:100%;max-width:380px;text-align:center}
