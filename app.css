@@ -156,3 +156,4 @@ body.authing .tabbar{display:none}
 .empty small{display:block;margin-top:6px;font-size:13px}
 
 .empty{text-align:center;color:var(--muted);padding:60px 0;font-size:15px}
+.pcard > .stage:first-child{margin-top:0}
