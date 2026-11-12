@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>OPIc 노트</title>
+<meta name="theme-color" content="#f6f4ef" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#16140f" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="OPIc 노트">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <div id="app">
+    <!-- 목록 -->
+    <section class="screen" id="screen-list">
+      <header class="topbar big">
+        <h1>OPIc 노트</h1>
+        <p class="sub" id="count"></p>
+      </header>
+      <main class="scroll" id="list"></main>
+    </section>
+
+    <!-- 상세 -->
+    <section class="screen" id="screen-detail" hidden>
+      <header class="topbar">
+        <button class="icon-btn" id="back" aria-label="뒤로">
+          <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="topbar-title" id="d-title"></div>
+        <span class="icon-btn ghost"></span>
+      </header>
+      <main class="scroll" id="detail"></main>
+    </section>
+
+    <!-- 랜덤 연습 -->
+    <section class="screen" id="screen-practice" hidden>
+      <header class="topbar big">
+        <h1>랜덤 연습</h1>
+        <p class="sub">질문만 보고 말해보기</p>
+      </header>
+      <main class="scroll" id="practice"></main>
+    </section>
+
+    <!-- 하단 플레이어 (상세 화면에서만) -->
+    <div class="player" id="player" hidden>
+      <div class="p-progress"><input type="range" id="p-range" min="0" max="1000" value="0" aria-label="재생 위치"></div>
+      <div class="p-row">
+        <span class="p-time" id="p-cur">0:00</span>
+        <button class="p-btn" id="p-back" aria-label="5초 뒤로">
+          <svg viewBox="0 0 24 24"><path d="M12 5V2L7 6l5 4V7a6 6 0 1 1-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><text x="12" y="16.5" text-anchor="middle" font-size="7" font-weight="700" fill="currentColor" font-family="Inter">5</text></svg>
+        </button>
+        <button class="p-play" id="p-play" aria-label="재생"></button>
+        <button class="p-btn p-text" id="p-speed" aria-label="재생 속도">1×</button>
+        <button class="p-btn" id="p-loop" aria-label="반복">
+          <svg viewBox="0 0 24 24"><path d="M17 2l3 3-3 3M4 11V9a4 4 0 0 1 4-4h12M7 22l-3-3 3-3M20 13v2a4 4 0 0 1-4 4H4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <span class="p-time right" id="p-dur">0:00</span>
+      </div>
+    </div>
+
+    <!-- 하단 탭바 -->
+    <nav class="tabbar" id="tabbar">
+      <a href="#" class="tab" data-tab="list">
+        <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <span>스크립트</span>
+      </a>
+      <a href="#practice" class="tab" data-tab="practice">
+        <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="9" cy="9" r="1.4" fill="currentColor"/><circle cx="15" cy="15" r="1.4" fill="currentColor"/><circle cx="15" cy="9" r="1.4" fill="currentColor"/><circle cx="9" cy="15" r="1.4" fill="currentColor"/></svg>
+        <span>랜덤 연습</span>
+      </a>
+    </nav>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
