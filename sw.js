@@ -1,5 +1,5 @@
 // 앱 파일(index.html, app.js 등)을 수정하면 버전을 올려야 폰에 새 버전이 반영됨
-const VERSION = "v6";
+const VERSION = "v7";
 const SHELL = `shell-${VERSION}`;
 const AUDIO = "audio-v1";
 const SHELL_FILES = [
@@ -40,6 +40,11 @@ self.addEventListener("fetch", e => {
   // 녹음 파일: 항상 네트워크 (Range 요청 때문에 캐시하지 않음)
   if (url.pathname.includes("/audio/")) return;
 
-  // 앱 셸: 캐시 우선
-  e.respondWith(caches.match(req).then(hit => hit || fetch(req)));
+  // 앱 셸: 네트워크 우선 (배포하면 바로 반영), 오프라인일 때만 캐시
+  e.respondWith(
+    fetch(req, { cache: "no-cache" }).then(res => {
+      if (res.ok) { const copy = res.clone(); caches.open(SHELL).then(c => c.put(req, copy)); }
+      return res;
+    }).catch(() => caches.match(req, { ignoreSearch: true }).then(hit => hit || caches.match("index.html")))
+  );
 });

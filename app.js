@@ -382,5 +382,16 @@ async function loadUser() {
 loadUser();
 
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+  // 새 서비스워커가 페이지를 넘겨받으면(=새 버전 배포) 한 번 새로고침해서 최신 코드로 전환
+  const hadController = !!navigator.serviceWorker.controller;
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (!hadController || reloaded) return;
+    reloaded = true; location.reload();
+  });
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js", { updateViaCache: "none" })
+      .then(reg => { reg.update().catch(() => {}); })
+      .catch(() => {});
+  });
 }
