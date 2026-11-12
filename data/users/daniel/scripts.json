@@ -11,7 +11,7 @@
           "type": "묘사",
           "title": "집 묘사",
           "question": "You indicated that you live in an apartment. Can you describe your home? What does it look like? How many rooms does it have?",
-          "audio": "audio/home-1-describe.mp3",
+          "audio": "audio/daniel/home-1-describe.mp3",
           "script": [
             "Alright, let me tell you about my place.",
             "I live in an apartment in Suwon, on the third floor. It has three bedrooms and two bathrooms, so it's pretty roomy for us.",

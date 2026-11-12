@@ -20,12 +20,48 @@
 </head>
 <body>
   <div id="app">
-    <!-- 목록 -->
-    <section class="screen" id="screen-list">
-      <header class="topbar big">
+    <!-- 로그인 / 회원가입 -->
+    <section class="screen auth" id="screen-auth" hidden>
+      <div class="auth-box">
+        <img class="auth-logo" src="icons/icon-192.png" alt="">
         <h1>OPIc 노트</h1>
+        <p class="sub">내 스크립트만 모아보기</p>
+        <div class="seg two" id="auth-tabs">
+          <button type="button" data-a="login" class="on">로그인</button>
+          <button type="button" data-a="signup">회원가입</button>
+        </div>
+        <form id="auth-form" autocomplete="on" novalidate>
+          <label class="field"><span>아이디</span>
+            <input id="a-user" name="username" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" inputmode="latin" placeholder="영문 소문자 · 숫자">
+          </label>
+          <label class="field"><span>비밀번호</span>
+            <input id="a-pass" name="password" type="password" autocomplete="current-password" placeholder="비밀번호">
+          </label>
+          <label class="field" id="a-pass2-wrap" hidden><span>비밀번호 확인</span>
+            <input id="a-pass2" type="password" autocomplete="new-password" placeholder="한 번 더">
+          </label>
+          <p class="auth-err" id="a-err" role="alert"></p>
+          <button class="btn primary wide" id="a-submit" type="submit">로그인</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- 목록 -->
+    <section class="screen" id="screen-list" hidden>
+      <header class="topbar big">
+        <div class="list-head">
+          <h1>OPIc 노트</h1>
+          <button class="user-chip" id="user-chip" type="button" aria-label="계정"></button>
+        </div>
         <p class="sub" id="count"></p>
       </header>
+      <div class="sheet-bg" id="user-sheet" hidden>
+        <div class="sheet">
+          <div class="sheet-user" id="sheet-user"></div>
+          <button class="btn wide danger" id="logout" type="button">로그아웃</button>
+          <button class="btn wide" id="sheet-close" type="button">닫기</button>
+        </div>
+      </div>
       <main class="scroll" id="list"></main>
     </section>
 

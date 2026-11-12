@@ -69,7 +69,7 @@ function loadAudio(src) {
 function renderList() {
   const total = DATA.topics.reduce((n, t) => n + t.items.length, 0);
   $("#count").textContent = `${DATA.topics.length}개 주제 · ${total}개 답변`;
-  if (!total) { $("#list").innerHTML = '<div class="empty">아직 스크립트가 없어요</div>'; return; }
+  if (!total) { $("#list").innerHTML = '<div class="empty">아직 스크립트가 없어요<small>관리자에게 스크립트·녹음을 보내면 여기에 추가돼요</small></div>'; return; }
   $("#list").innerHTML = DATA.topics.map(t => `
     <div class="group">
       <div class="group-h">${esc(t.emoji || "")} ${esc(t.name)}</div>
@@ -162,13 +162,81 @@ function renderPractice() {
   $("#t-next").onclick = renderPractice;
 }
 
+/* ---------- auth (브라우저 localStorage, base64 저장 — 보안 용도 아님, 공간 구분용) ---------- */
+const b64e = str => btoa(unescape(encodeURIComponent(str)));
+const b64d = str => { try { return decodeURIComponent(escape(atob(str))); } catch (e) { return ""; } };
+const ACC_KEY = "opic.accounts", SES_KEY = "opic.session";
+const Auth = {
+  accounts() { const raw = store.get(ACC_KEY, ""); if (!raw) return {}; try { return JSON.parse(b64d(raw)) || {}; } catch (e) { return {}; } },
+  save(acc) { store.set(ACC_KEY, b64e(JSON.stringify(acc))); },
+  current() { const u = b64d(store.get(SES_KEY, "")); return u || null; },
+  signup(u, p) {
+    const acc = this.accounts();
+    if (acc[u]) return "이미 있는 아이디예요";
+    acc[u] = b64e(p); this.save(acc); store.set(SES_KEY, b64e(u)); return null;
+  },
+  login(u, p) {
+    const acc = this.accounts();
+    if (!acc[u]) return "없는 아이디예요. 이 기기에서 처음이면 회원가입부터 해주세요";
+    if (b64d(acc[u]) !== p) return "비밀번호가 맞지 않아요";
+    store.set(SES_KEY, b64e(u)); return null;
+  },
+  logout() { try { localStorage.removeItem(SES_KEY); } catch (e) {} }
+};
+
+let authMode = "login";
+function setAuthMode(m) {
+  authMode = m;
+  document.querySelectorAll("#auth-tabs button").forEach(b => b.classList.toggle("on", b.dataset.a === m));
+  $("#a-pass2-wrap").hidden = m !== "signup";
+  $("#a-pass").autocomplete = m === "signup" ? "new-password" : "current-password";
+  $("#a-submit").textContent = m === "signup" ? "가입하고 시작하기" : "로그인";
+  $("#a-err").textContent = "";
+}
+document.querySelectorAll("#auth-tabs button").forEach(b => b.onclick = () => setAuthMode(b.dataset.a));
+$("#auth-form").addEventListener("submit", async e => {
+  e.preventDefault();
+  const u = $("#a-user").value.trim().toLowerCase(), p = $("#a-pass").value;
+  const err = m => { $("#a-err").textContent = m; };
+  if (!/^[a-z0-9_-]{2,20}$/.test(u)) return err("아이디는 영문 소문자·숫자·_·- 2~20자");
+  if (!p) return err("비밀번호를 입력해주세요");
+  let r;
+  if (authMode === "signup") {
+    if (p !== $("#a-pass2").value) return err("비밀번호가 서로 달라요");
+    r = Auth.signup(u, p);
+  } else r = Auth.login(u, p);
+  if (r) return err(r);
+  $("#a-pass").value = $("#a-pass2").value = "";
+  await loadUser();
+});
+
+function openSheet(open) { $("#user-sheet").hidden = !open; }
+$("#user-chip").onclick = () => openSheet(true);
+$("#sheet-close").onclick = () => openSheet(false);
+$("#user-sheet").onclick = e => { if (e.target.id === "user-sheet") openSheet(false); };
+$("#logout").onclick = () => {
+  openSheet(false); Auth.logout(); audio.pause(); stopTimer();
+  DATA = { topics: [] }; byId.clear();
+  history.replaceState(null, "", location.pathname);
+  showAuth();
+};
+function showAuth() {
+  document.body.classList.add("authing");
+  loadAudio(null);
+  ["list", "detail", "practice"].forEach(n => $("#screen-" + n).hidden = true);
+  $("#screen-auth").hidden = false;
+  setAuthMode(Object.keys(Auth.accounts()).length ? "login" : "signup");
+}
+
 /* ---------- router ---------- */
 function show(name) {
+  $("#screen-auth").hidden = true; document.body.classList.remove("authing");
   ["list", "detail", "practice"].forEach(n => $("#screen-" + n).hidden = n !== name);
   document.querySelectorAll(".tab").forEach(a => a.classList.toggle("on",
     a.dataset.tab === (name === "practice" ? "practice" : "list")));
 }
 function route() {
+  if (!Auth.current()) { showAuth(); return; }
   const h = decodeURIComponent(location.hash.slice(1));
   if (h === "practice") { loadAudio(null); show("practice"); renderPractice(); return; }
   stopTimer();
@@ -179,18 +247,26 @@ $("#back").onclick = () => { location.hash = ""; };
 window.addEventListener("hashchange", route);
 
 /* ---------- boot ---------- */
-async function boot() {
+let loadError = "";
+async function loadUser() {
+  const u = Auth.current();
+  if (!u) { showAuth(); return; }
+  $("#user-chip").innerHTML = `<span class="av">${esc(u[0].toUpperCase())}</span><span class="nm">${esc(u)}</span>`;
+  $("#sheet-user").innerHTML = `로그인 중<b>${esc(u)}</b>`;
+  DATA = { topics: [] }; byId.clear(); loadError = "";
   try {
-    const res = await fetch("data/scripts.json", { cache: "no-cache" });
-    DATA = await res.json();
-  } catch (e) {
-    $("#list").innerHTML = '<div class="empty">스크립트를 불러오지 못했어요</div>';
-  }
+    const res = await fetch(`data/users/${encodeURIComponent(u)}/scripts.json`, { cache: "no-cache" });
+    if (res.status === 404) loadError = "empty";
+    else if (!res.ok) throw new Error(res.status);
+    else DATA = await res.json();
+  } catch (e) { loadError = "fail"; }
+  DATA.topics = DATA.topics || [];
   DATA.topics.forEach(t => t.items.forEach(it => byId.set(it.id, { ...it, topicName: t.name })));
   renderList();
+  if (loadError === "fail") $("#list").innerHTML = '<div class="empty">스크립트를 불러오지 못했어요<small>인터넷 연결을 확인해주세요</small></div>';
   route();
 }
-boot();
+loadUser();
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));

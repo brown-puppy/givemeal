@@ -1,5 +1,5 @@
 // 앱 파일(index.html, app.js 등)을 수정하면 버전을 올려야 폰에 새 버전이 반영됨
-const VERSION = "v1";
+const VERSION = "v2";
 const SHELL = `shell-${VERSION}`;
 const AUDIO = "audio-v1";
 const SHELL_FILES = [
@@ -26,7 +26,7 @@ self.addEventListener("fetch", e => {
   if (url.origin !== location.origin) return;
 
   // 스크립트 데이터: 네트워크 우선 (새 스크립트 바로 반영), 오프라인이면 캐시
-  if (url.pathname.endsWith("/data/scripts.json")) {
+  if (url.pathname.endsWith("/scripts.json")) {
     e.respondWith(
       fetch(req).then(res => {
         const copy = res.clone();
