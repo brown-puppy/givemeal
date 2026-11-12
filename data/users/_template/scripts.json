@@ -1,0 +1,28 @@
+{
+  "topics": [
+    {
+      "id": "movie",
+      "name": "영화",
+      "emoji": "🎬",
+      "items": [
+        {
+          "id": "movie-1",
+          "no": 1,
+          "type": "묘사",
+          "title": "좋아하는 장르",
+          "question": "You indicated that you like to go to the movies. What kinds of movies do you like to watch? Why do you like that genre?",
+          
+          "script": [
+            "I watch various kinds of movies, but my favorite genre is **science fiction**.",
+            "What I like about them is their creative stories and impressive visuals."
+          ],
+          "keywords": [
+            "최애 장르: SF",
+            "좋은 점: 스토리 + 영상미"
+          ],
+          "notes": "선택 항목. 카드 아래 메모로 보임."
+        }
+      ]
+    }
+  ]
+}

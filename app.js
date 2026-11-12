@@ -310,7 +310,7 @@ $("#auth-form").addEventListener("submit", async e => {
   e.preventDefault();
   const u = $("#a-user").value.trim().toLowerCase(), p = $("#a-pass").value;
   const err = m => { $("#a-err").textContent = m; };
-  if (!/^[a-z0-9_-]{2,20}$/.test(u)) return err("아이디는 영문 소문자·숫자·_·- 2~20자");
+  if (!/^[a-z][a-z0-9_-]{1,19}$/.test(u)) return err("아이디는 영문 소문자로 시작, 소문자·숫자·_·- 2~20자");
   if (!p) return err("비밀번호를 입력해주세요");
   let r;
   if (authMode === "signup") {
