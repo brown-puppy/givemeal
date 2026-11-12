@@ -153,8 +153,28 @@ function renderDetail(it) {
 }
 
 /* ---------- practice ---------- */
-let timerId = null, lastPick = null;
-function stopTimer() { if (timerId) clearInterval(timerId); timerId = null; }
+// 흐름: 시작 → 질문 1회 재생 → 5초 대기(이 안에 다시 듣기 1회 가능) → 답변 타이머
+//       다시 듣기를 누르면 2번째 재생이 끝나는 즉시 답변 타이머
+let timerId = null, lastPick = null, session = 0;
+function stopTimer() { if (timerId) clearInterval(timerId); timerId = null; session++; TTS.stop(); }
+
+// 질문 음성 재생. 끝나면 resolve. (onend가 안 오는 브라우저 대비 예상 시간 + 여유로 강제 진행)
+function sayQuestion(text) {
+  return new Promise(resolve => {
+    if (!TTS.ok) { resolve(); return; }
+    let done = false;
+    const finish = () => { if (!done) { done = true; clearTimeout(guard); resolve(); } };
+    const words = text.split(/\s+/).length;
+    const guard = setTimeout(finish, (words / 2.2 + 4) * 1000);
+    speechSynthesis.cancel(); audio.pause();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = "en-US"; u.rate = 0.95;
+    if (TTS.voice || TTS.pick()) u.voice = TTS.voice;
+    u.onend = finish; u.onerror = finish;
+    speechSynthesis.speak(u);
+  });
+}
+
 function renderPractice() {
   stopTimer();
   const all = [...byId.values()];
@@ -166,32 +186,91 @@ function renderPractice() {
   root.innerHTML = `
     <div class="pcard">
       <div class="pmeta"><span class="pill">${esc(it.topicName)}</span><span class="pill">Q${esc(it.no)} ${esc(it.type || it.title)}</span></div>
-      <p class="pq" id="pq">${esc(it.question)}</p>
-      ${sayBtn("질문 듣기")}
-      <div class="timer" id="t">0:00</div>
-      <p class="timer-sub">답변 목표 1:30 ~ 2:00</p>
+      <p class="pq">${esc(it.question)}</p>
+      <div class="stage" id="stage">
+        <div class="stage-label" id="s-label">준비되면 시작</div>
+        <div class="timer" id="t">0:00</div>
+        <p class="timer-sub" id="s-sub">질문을 듣고 5초 안에 한 번 더 들을 수 있어요</p>
+      </div>
       <div class="btns">
-        <button class="btn primary wide" id="t-start">말하기 시작</button>
+        <button class="btn primary wide" id="t-main">시작</button>
+        <button class="btn wide" id="t-replay" hidden>다시 듣기 (1회)</button>
         <button class="btn" id="t-kw">키워드 보기</button>
-        <a class="btn" href="#${esc(it.id)}">스크립트 보기</a>
+        <button class="btn" id="t-sc">스크립트 보기</button>
         <button class="btn wide" id="t-next">다음 문제</button>
       </div>
       <div class="pkw" id="t-kwbox" hidden><ol class="kw">${it.keywords.map(k => `<li><span>${md(k)}</span></li>`).join("")}</ol></div>
+      <div class="pkw script" id="t-scbox" hidden>${it.script.map(p => `<p>${md(p)}</p>`).join("")}</div>
     </div>`;
-  const qs = root.querySelector(".q-say"); if (qs) qs.onclick = () => TTS.speak(it.question, qs);
-  const t = $("#t"), start = $("#t-start");
-  let t0 = 0;
-  start.onclick = () => {
-    if (timerId) { stopTimer(); start.textContent = "다시 시작"; return; }
-    t0 = Date.now(); t.textContent = "0:00"; t.classList.remove("over");
-    start.textContent = "멈추기";
-    timerId = setInterval(() => {
-      const s = (Date.now() - t0) / 1000;
-      t.textContent = fmt(s);
-      t.classList.toggle("over", s > 120);
-    }, 250);
+
+  const t = $("#t"), label = $("#s-label"), sub = $("#s-sub");
+  const main = $("#t-main"), replay = $("#t-replay");
+  let state = "idle";   // idle | q1 | wait | q2 | answer | done
+  const setState = (st, l, sb) => {
+    state = st; label.textContent = l; if (sb !== undefined) sub.textContent = sb;
+    $("#stage").dataset.state = st;
   };
-  $("#t-kw").onclick = () => { const b = $("#t-kwbox"); b.hidden = !b.hidden; $("#t-kw").textContent = b.hidden ? "키워드 보기" : "키워드 숨기기"; };
+
+  function startAnswer(my) {
+    if (my !== session) return;
+    clearInterval(timerId);
+    replay.hidden = true;
+    setState("answer", "답변 중", "목표 1:30 ~ 2:00");
+    main.textContent = "답변 끝";
+    const t0 = Date.now(); t.textContent = "0:00"; t.classList.remove("over");
+    timerId = setInterval(() => {
+      const sec = (Date.now() - t0) / 1000;
+      t.textContent = fmt(sec); t.classList.toggle("over", sec > 120);
+    }, 250);
+  }
+
+  function startWait(my) {
+    if (my !== session) return;
+    setState("wait", "5초 후 답변 시작", "지금 다시 듣기 가능 (1회)");
+    replay.hidden = false; main.textContent = "바로 답변 시작";
+    let left = 5; t.textContent = "0:05"; t.classList.remove("over");
+    clearInterval(timerId);
+    timerId = setInterval(() => {
+      if (my !== session) return;
+      left--; t.textContent = "0:0" + Math.max(left, 0);
+      if (left <= 0) startAnswer(my);
+    }, 1000);
+  }
+
+  async function begin() {
+    stopTimer(); const my = session;
+    setState("q1", "질문 듣는 중", "질문을 잘 들어보세요");
+    main.textContent = "건너뛰기"; t.textContent = "🔊";
+    await sayQuestion(it.question);
+    startWait(my);
+  }
+
+  replay.onclick = async () => {
+    if (state !== "wait") return;
+    clearInterval(timerId); timerId = null;
+    const my = session;
+    replay.hidden = true;
+    setState("q2", "다시 듣는 중", "끝나면 바로 답변 시작");
+    main.textContent = "건너뛰기"; t.textContent = "🔊";
+    await sayQuestion(it.question);
+    startAnswer(my);
+  };
+
+  main.onclick = () => {
+    if (state === "idle" || state === "done") return begin();
+    if (state === "q1") { TTS.stop(); return; }             // sayQuestion resolve → wait
+    if (state === "q2") { TTS.stop(); return; }             // → answer
+    if (state === "wait") return startAnswer(session);
+    if (state === "answer") {
+      clearInterval(timerId); timerId = null;
+      setState("done", "답변 시간", "키워드·스크립트로 확인해보세요");
+      main.textContent = "처음부터 다시";
+    }
+  };
+
+  const toggle = (btn, box, on, off) => { box.hidden = !box.hidden; btn.textContent = box.hidden ? on : off; };
+  $("#t-kw").onclick = () => toggle($("#t-kw"), $("#t-kwbox"), "키워드 보기", "키워드 숨기기");
+  $("#t-sc").onclick = () => toggle($("#t-sc"), $("#t-scbox"), "스크립트 보기", "스크립트 숨기기");
   $("#t-next").onclick = renderPractice;
 }
 
