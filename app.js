@@ -160,17 +160,25 @@ function stopTimer() { if (timerId) clearInterval(timerId); timerId = null; sess
 
 // 질문 음성 재생. 끝나면 resolve. (onend가 안 오는 브라우저 대비 예상 시간 + 여유로 강제 진행)
 function sayQuestion(text) {
+  // iOS 대비: 음성이 실제로 시작(onstart)된 뒤에만 길이 기반 안전 타이머를 건다.
+  // 4초 안에 시작을 못 하면(브라우저가 막음) 대기열을 비우고 넘어간다 → 나중에 늦게 튀어나오는 일 방지
   return new Promise(resolve => {
     if (!TTS.ok) { resolve(); return; }
-    let done = false;
-    const finish = () => { if (!done) { done = true; clearTimeout(guard); resolve(); } };
+    let done = false, guard = null, startGuard = null;
     const words = text.split(/\s+/).length;
-    const guard = setTimeout(finish, (words / 2.2 + 4) * 1000);
+    const finish = () => { if (done) return; done = true; clearTimeout(guard); clearTimeout(startGuard); resolve(); };
+    const armGuard = () => { clearTimeout(guard); guard = setTimeout(finish, (words / 2.2 + 4) * 1000); };
     speechSynthesis.cancel(); audio.pause();
     const u = new SpeechSynthesisUtterance(text);
     u.lang = "en-US"; u.rate = 0.95;
     if (TTS.voice || TTS.pick()) u.voice = TTS.voice;
+    u.onstart = armGuard;
     u.onend = finish; u.onerror = finish;
+    startGuard = setTimeout(() => {
+      if (done || guard) return;
+      if (speechSynthesis.speaking) armGuard();      // onstart만 안 온 경우: 말하는 중이면 계속 기다림
+      else { speechSynthesis.cancel(); finish(); }   // 시작도 못 함: 버리고 진행
+    }, 4000);
     speechSynthesis.speak(u);
   });
 }
@@ -386,23 +394,26 @@ const sleep = ms => until(done => { setTimeout(() => done(true), ms); });
 
 function keepAlive(on) { if (on) keeper.play().catch(() => {}); else keeper.pause(); }
 
-async function driveStart() {
+function driveStart() {
+  // 주의: 이 함수 안에서 await 하지 않는다. iOS는 탭(사용자 제스처) 안에서 바로 호출된
+  // speechSynthesis.speak / audio.play만 허용하고, 아니면 보류했다가 나중에 재생해서 순서가 꼬인다.
   Drive.opts = { order: getOpt("order", "seq"), loop: getOpt("loop", "stop") };
   Drive.list = buildList(); if (!Drive.list.length) return;
   Drive.running = true; Drive.paused = false; Drive.idx = 0; Drive.phase = "question"; Drive.left = THINK_SEC;
   audio.pause();
-  // iOS: 사용자 탭 안에서 오디오 재생 권한을 열어둔다
-  try { driveAudio.src = keeper.src; await driveAudio.play(); driveAudio.pause(); } catch (e) {}
-  keepAlive(true); wakeOn(); mediaOn();
+  // 녹음용 오디오 재생 권한 열기 (기다리지 않음)
+  try { driveAudio.muted = true; driveAudio.src = keeper.src; const pr = driveAudio.play();
+        if (pr) pr.then(() => { driveAudio.pause(); driveAudio.muted = false; }).catch(() => { driveAudio.muted = false; }); } catch (e) {}
+  wakeOn(); mediaOn();
   renderDrivePlayer();
-  runFrom("question");
+  runFrom("question");   // 첫 질문 음성이 탭 안에서 바로 시작됨
 }
 
 async function runFrom(phase) {
   const my = ++Drive.token; abortWaits();
   const it = Drive.list[Drive.idx];
   if (phase === "question") {
-    setPhase("question"); keepAlive(true);
+    setPhase("question"); keepAlive(false); driveAudio.pause();
     await sayQuestion(it.question);
     if (!alive(my)) return;
     phase = "think"; Drive.left = THINK_SEC;
@@ -436,6 +447,7 @@ async function runFrom(phase) {
   }
 }
 function resetModel(it) {
+  driveAudio.muted = false;
   if (!it.audio) return;
   const abs = new URL(it.audio, location.href).href;
   if (driveAudio.src !== abs) driveAudio.src = it.audio;
