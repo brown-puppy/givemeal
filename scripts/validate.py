@@ -49,9 +49,9 @@ def check_user(user_dir: Path):
     if not f.exists():
         err(rel, "scripts.json 없음")
         return set()
-    extra = [p.name for p in user_dir.iterdir() if p.name != "scripts.json"]
+    extra = [p.name for p in user_dir.iterdir() if p.name not in ("scripts.json", "timings.json")]
     if extra:
-        err(rel, f"scripts.json 외 파일 금지: {extra}")
+        err(rel, f"scripts.json / timings.json 외 파일 금지: {extra}")
     try:
         data = json.loads(f.read_text(encoding="utf-8"))
     except Exception as e:  # noqa: BLE001
@@ -149,6 +149,23 @@ def check_user(user_dir: Path):
     return used_audio
 
 
+def check_timings(user_dir: Path):
+    """timings.json 은 GitHub Actions(scripts/align.py)가 자동 생성. 구조만 확인."""
+    f = user_dir / "timings.json"
+    if not f.exists():
+        return
+    rel = f"data/users/{user_dir.name}/timings.json"
+    try:
+        t = json.loads(f.read_text(encoding="utf-8"))
+        assert isinstance(t, dict)
+        for iid, v in t.items():
+            assert isinstance(v.get("sentences"), list) and all(isinstance(x, list) and len(x) == 4 for x in v["sentences"])
+            if v.get("score", 1) < 0.6:
+                warn(rel, f"{iid}: 녹음과 스크립트 일치도 {v['score']} — 다른 문항 녹음이 연결됐을 수 있음")
+    except Exception:  # noqa: BLE001
+        err(rel, "형식 오류 — 손으로 고치지 말고 삭제하면 Actions가 다시 생성함")
+
+
 def check_audio(users, used):
     if not AUDIO_DIR.exists():
         return
@@ -189,6 +206,7 @@ def main():
             continue
         users.add(d.name)
         used |= check_user(d)
+        check_timings(d)
     check_audio(only, used)
     for line in warns + errors:
         print(line)

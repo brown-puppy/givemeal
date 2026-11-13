@@ -116,6 +116,37 @@ function renderList() {
     </div>`).join("");
 }
 
+/* ---------- 문장 타이밍 (GitHub Actions의 Whisper가 만든 timings.json) ---------- */
+let TIMINGS = {};   // item id → { sentences: [[para, start, end, t]] } (스크립트와 해시가 일치하는 것만)
+async function scriptHash(script) {
+  // scripts/align.py 의 script_hash 와 같은 방식: compact JSON → SHA-256 앞 16자리
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify(script)));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("").slice(0, 16);
+}
+async function loadTimings(u) {
+  TIMINGS = {};
+  let raw = {};
+  try {
+    const res = await fetch(`data/users/${encodeURIComponent(u)}/timings.json`, { cache: "no-cache" });
+    if (!res.ok) return;
+    raw = await res.json();
+  } catch (e) { return; }
+  await Promise.all(Object.entries(raw).map(async ([id, v]) => {
+    const it = byId.get(id);
+    if (!it || !it.audio || !Array.isArray(v.sentences)) return;
+    try { if (crypto.subtle && (await scriptHash(it.script)) !== v.script) return; } catch (e) {}  // 스크립트가 바뀌었으면 무시 (재정렬 대기)
+    TIMINGS[id] = v;
+  }));
+}
+// 문단 하나를 문장 span 으로 쪼개서 렌더
+function renderPara(text, p, sents) {
+  const mine = sents ? sents.filter(s => s[0] === p) : [];
+  if (!mine.length) return md(text);
+  return mine.map(([, a, b, t]) => `<span class="sen" data-t="${t}">${md(text.slice(a, b))}</span>`).join("");
+}
+let senSync = null;   // 재생 위치 → 현재 문장 하이라이트
+audio.addEventListener("timeupdate", () => senSync && senSync());
+
 /* ---------- detail ---------- */
 function renderDetail(it) {
   $("#d-title").textContent = `${it.topicName} · Q${it.no} ${it.title}`;
@@ -134,16 +165,37 @@ function renderDetail(it) {
   const qs = root.querySelector(".q-say"); if (qs) qs.onclick = () => TTS.speak(it.question, qs);
   const body = $("#d-body");
   const set = m => {
-    mode = m; store.set("mode", m);
+    mode = m; store.set("mode", m); senSync = null;
     root.querySelectorAll(".seg button").forEach(b => b.classList.toggle("on", b.dataset.m === m));
     if (m === "kw") {
       body.className = "";
       body.innerHTML = `<ol class="kw">${it.keywords.map(k => `<li><span>${md(k)}</span></li>`).join("")}</ol>`;
     } else {
       body.className = "script" + (m === "blind" ? " blur" : "");
+      const tm = m === "script" && it.audio ? TIMINGS[it.id] : null;
       body.innerHTML = (m === "blind" ? '<p class="hint">먼저 말해보고, 문단을 탭해서 확인</p>' : "")
-        + it.script.map(p => `<p class="para">${md(p)}</p>`).join("");
+        + (tm ? '<p class="hint">문장을 탭하면 그 부분부터 재생돼요</p>' : "")
+        + it.script.map((p, i) => `<p class="para">${tm ? renderPara(p, i, tm.sentences) : md(p)}</p>`).join("");
       if (m === "blind") body.querySelectorAll(".para").forEach(p => p.onclick = () => p.classList.toggle("show"));
+      if (tm) {
+        const spans = [...body.querySelectorAll(".sen")];
+        spans.forEach(sp => sp.onclick = async () => {
+          audio.currentTime = Number(sp.dataset.t);
+          try { await audio.play(); } catch (e) {}
+          senSync();
+        });
+        let cur = -1;
+        senSync = () => {
+          const now = audio.currentTime + 0.05;
+          let k = -1;
+          if (!audio.paused || audio.currentTime > 0) for (let i = 0; i < spans.length; i++) { if (Number(spans[i].dataset.t) <= now) k = i; else break; }
+          if (k === cur) return;
+          if (cur >= 0 && spans[cur]) spans[cur].classList.remove("now");
+          cur = k;
+          if (k >= 0) spans[k].classList.add("now");
+        };
+        senSync();
+      }
     }
   };
   root.querySelectorAll(".seg button").forEach(b => b.onclick = () => set(b.dataset.m));
@@ -642,6 +694,7 @@ function show(name) {
     a.dataset.tab === (name === "practice" || name === "drive" ? name : "list")));
 }
 function route() {
+  senSync = null;
   const h = decodeURIComponent(location.hash.slice(1));
   if (h === "drive" && Drive.running) { show("drive"); return; }  // 재생 중엔 그대로 유지
   driveStop();
@@ -672,6 +725,7 @@ async function loadUser() {
   } catch (e) { loadError = "fail"; }
   DATA.topics = DATA.topics || [];
   DATA.topics.forEach(t => t.items.forEach(it => byId.set(it.id, { ...it, topicName: t.name })));
+  await loadTimings(u);
   renderList();
   if (loadError === "fail") $("#list").innerHTML = '<div class="empty">스크립트를 불러오지 못했어요<small>인터넷 연결을 확인해주세요</small></div>';
   route();

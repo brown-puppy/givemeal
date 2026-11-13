@@ -203,3 +203,9 @@ body.authing .tabbar{display:none}
 .dplay .btn{width:100%;max-width:420px}
 .dplay.done .dp-big{font-size:80px}
 .dplay.done .btn{margin-top:8px}
+
+/* 문장 탭 재생 */
+.sen{cursor:pointer;border-radius:5px;padding:1px 0;transition:background .15s,color .15s;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+.sen:active{background:var(--chip)}
+.sen.now{background:var(--accent-soft);box-shadow:0 0 0 2px var(--accent-soft)}
+.script .hint + .para{margin-top:0}

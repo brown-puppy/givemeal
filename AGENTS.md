@@ -19,6 +19,7 @@ OPIc 답변 연습용 모바일 웹앱(GitHub Pages + PWA). 서버 없음, 빌�
 - 녹음은 `audio/<아이디>/` 아래 파일을 `scripts.json`의 `audio` 경로로 연결한다.
 - 레포는 **Public**. 올린 모든 텍스트·녹음은 누구나 볼 수 있다.
 - `scripts.json`은 서비스워커가 네트워크 우선으로 받으므로, **콘텐츠 변경은 push 후 1~2분이면 반영**된다(앱 버전 올릴 필요 없음).
+- 녹음이나 스크립트를 push하면 GitHub Actions(`align recordings`)가 Whisper로 받아써서 문장별 시작 시간을 `data/users/<id>/timings.json`에 **자동 커밋**한다(수 분 소요). 앱은 이걸로 "문장 탭 → 그 위치 재생"과 재생 중 문장 하이라이트를 한다.
 
 ---
 
@@ -30,6 +31,7 @@ OPIc 답변 연습용 모바일 웹앱(GitHub Pages + PWA). 서버 없음, 빌�
 data/users/<id>/scripts.json
 audio/<id>/*.mp3 | *.m4a
 ```
+(`data/users/<id>/timings.json`은 같은 폴더에 있지만 Actions 전용이다. 건드리지 않는다.)
 
 ### 절대 수정·삭제 금지
 | 대상 | 이유 |
@@ -38,6 +40,7 @@ audio/<id>/*.mp3 | *.m4a
 | `index.html`, `app.js`, `app.css`, `sw.js`, `manifest.webmanifest`, `icons/` | 앱 코드. owner 요청일 때만 (§9) |
 | `AGENTS.md`, `CLAUDE.md`, `README.md`, `scripts/`, `.github/` | 규칙·검사 체계. owner 요청일 때만 |
 | `data/users/_template/` | 예약된 템플릿 |
+| `data/users/*/timings.json` | Actions가 자동 생성. 손으로 만들거나 고치지 않는다 (§5-1) |
 | git 히스토리 | `push --force`, `rebase` 후 강제 push, 히스토리 재작성 금지 |
 
 사용자가 앱 기능 추가/변경을 원하면 **코드를 고치지 말고** "레포 주인(brown-puppy)에게 요청해야 한다"고 안내한다.
@@ -169,6 +172,13 @@ audio/<id>/*.mp3 | *.m4a
   - 음성 인식(STT)이 가능하면 첫 문장을 들어보고 script와 대조해도 된다. 이 경우 근거를 보고에 적는다.
 - 녹음을 교체하면 옛 파일은 삭제하고 새 파일로 경로를 갱신한다 (참조 없는 파일 남기지 않기).
 - 사용자당 녹음 총합 100MB 이하 권장. 넘으면 사용자에게 알린다.
+
+### 5-1. 문장 타이밍 (`timings.json`, 자동 생성)
+- 녹음/스크립트 push 후 Actions가 만들어 커밋한다. **에이전트는 생성·수정·삭제하지 않는다.** (형식이 깨진 경우만 예외: 삭제하면 다음 실행 때 다시 생김)
+- 그래서 push 직후 `git pull --rebase`가 봇 커밋을 받아오는 건 정상이다. 다음 작업 전에 항상 pull.
+- 스크립트를 고치면 기존 타이밍은 앱이 자동으로 무시하고(해시 불일치), Actions가 새로 만든다.
+- 검사기가 `일치도 0.6 미만` 경고를 내면 **다른 문항의 녹음이 연결됐을 가능성이 높다.** 사용자에게 알리고 매칭을 다시 확인한다.
+- 사용자에게 보고할 때: "문장 탭 재생은 몇 분 뒤(Actions 완료 후)부터 된다"고 덧붙인다.
 
 ---
 

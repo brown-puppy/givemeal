@@ -1,5 +1,5 @@
 // 앱 파일(index.html, app.js 등)을 수정하면 버전을 올려야 폰에 새 버전이 반영됨
-const VERSION = "v10";
+const VERSION = "v11";
 const SHELL = `shell-${VERSION}`;
 const AUDIO = "audio-v1";
 const SHELL_FILES = [
