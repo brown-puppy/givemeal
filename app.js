@@ -147,6 +147,53 @@ function renderPara(text, p, sents) {
 let senSync = null;   // 재생 위치 → 현재 문장 하이라이트
 audio.addEventListener("timeupdate", () => senSync && senSync());
 
+/* ---------- 가리기 모드: 문장 단위 랜덤 가리기 ---------- */
+// scripts/align.py 의 split_sentences 와 같은 규칙 (** 강조 안에서는 안 자름)
+function splitSentences(para) {
+  const cuts = [0], re = /[.!?…]+["'”’)]*\s+/g;
+  let m;
+  while ((m = re.exec(para))) {
+    const pos = m.index + m[0].length;
+    if (pos >= para.length) continue;
+    if ((para.slice(0, pos).match(/\*\*/g) || []).length % 2) continue;
+    cuts.push(pos);
+  }
+  cuts.push(para.length);
+  const out = [];
+  for (let i = 0; i < cuts.length - 1; i++) if (para.slice(cuts[i], cuts[i + 1]).trim()) out.push([cuts[i], cuts[i + 1]]);
+  return out;
+}
+function sentencesOf(it) {
+  const tm = TIMINGS[it.id];
+  if (tm) return tm.sentences.map(([p, a, b]) => [p, a, b]);
+  const out = [];
+  it.script.forEach((para, p) => splitSentences(para).forEach(([a, b]) => out.push([p, a, b])));
+  return out;
+}
+const HIDE_RATIO = 0.5;
+function renderBlind(body, it) {
+  const how = store.get("blind", "half");   // half: 랜덤 절반, all: 전부
+  const sents = sentencesOf(it);
+  const hide = new Set();
+  if (how === "all") sents.forEach((_, i) => hide.add(i));
+  else shuffle([...sents.keys()]).slice(0, Math.max(1, Math.round(sents.length * HIDE_RATIO))).forEach(i => hide.add(i));
+  body.className = "script blind";
+  body.innerHTML = `
+    <div class="blind-bar">
+      <div class="seg two mini" id="b-how"><button type="button" data-b="half">랜덤 절반</button><button type="button" data-b="all">전부</button></div>
+      <button class="b-btn" id="b-shuffle" type="button">${how === "all" ? "다시 가리기" : "다시 섞기"}</button>
+    </div>
+    <p class="hint">가려진 문장을 먼저 말해보고, 탭해서 확인</p>
+    ${it.script.map((para, p) => `<p class="para">${sents.map((s, i) => [s, i]).filter(([s]) => s[0] === p)
+        .map(([[, a, b], i]) => `<span class="sb${hide.has(i) ? " hid" : ""}">${md(para.slice(a, b))}</span>`).join("")}</p>`).join("")}`;
+  body.querySelectorAll(".sb.hid").forEach(sp => sp.onclick = () => sp.classList.toggle("show"));
+  body.querySelectorAll("#b-how button").forEach(b => {
+    b.classList.toggle("on", b.dataset.b === how);
+    b.onclick = () => { store.set("blind", b.dataset.b); renderBlind(body, it); };
+  });
+  $("#b-shuffle").onclick = () => renderBlind(body, it);
+}
+
 /* ---------- detail ---------- */
 function renderDetail(it) {
   $("#d-title").textContent = `${it.topicName} · Q${it.no} ${it.title}`;
@@ -170,13 +217,13 @@ function renderDetail(it) {
     if (m === "kw") {
       body.className = "";
       body.innerHTML = `<ol class="kw">${it.keywords.map(k => `<li><span>${md(k)}</span></li>`).join("")}</ol>`;
+    } else if (m === "blind") {
+      renderBlind(body, it);
     } else {
-      body.className = "script" + (m === "blind" ? " blur" : "");
-      const tm = m === "script" && it.audio ? TIMINGS[it.id] : null;
-      body.innerHTML = (m === "blind" ? '<p class="hint">먼저 말해보고, 문단을 탭해서 확인</p>' : "")
-        + (tm ? '<p class="hint">문장을 탭하면 그 부분부터 재생돼요</p>' : "")
+      body.className = "script";
+      const tm = it.audio ? TIMINGS[it.id] : null;
+      body.innerHTML = (tm ? '<p class="hint">문장을 탭하면 그 부분부터 재생돼요</p>' : "")
         + it.script.map((p, i) => `<p class="para">${tm ? renderPara(p, i, tm.sentences) : md(p)}</p>`).join("");
-      if (m === "blind") body.querySelectorAll(".para").forEach(p => p.onclick = () => p.classList.toggle("show"));
       if (tm) {
         const spans = [...body.querySelectorAll(".sen")];
         spans.forEach(sp => sp.onclick = async () => {
