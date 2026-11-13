@@ -119,6 +119,15 @@ def align_item(script, twords):
     out = [[p, a, b, round(t, 2)] for (p, a, b), t in zip(sents, starts)]
     return out, round(score, 3)
 
+# ---------- 오디오 로드 (ffmpeg → 16kHz mono float32) ----------
+def load_audio(path):
+    import subprocess
+    import numpy as np
+    raw = subprocess.run(["ffmpeg", "-nostdin", "-loglevel", "error", "-i", str(path),
+                          "-f", "s16le", "-ac", "1", "-ar", "16000", "-"],
+                         capture_output=True, check=True).stdout
+    return np.frombuffer(raw, np.int16).astype(np.float32) / 32768.0
+
 # ---------- main ----------
 def main():
     ap = argparse.ArgumentParser()
@@ -154,7 +163,8 @@ def main():
                     from faster_whisper import WhisperModel
                     print(f"loading {MODEL} ...", flush=True)
                     model = WhisperModel(MODEL, device="cpu", compute_type="int8")
-                segs, info = model.transcribe(str(ROOT / a), language="en", word_timestamps=True,
+                wav = load_audio(ROOT / a)
+                segs, info = model.transcribe(wav, language="en", word_timestamps=True,
                                               beam_size=5, condition_on_previous_text=False, vad_filter=False)
                 tw = [(w.word, w.start, w.end) for s in segs for w in (s.words or [])]
                 sents, score = align_item(it["script"], tw)
@@ -163,7 +173,7 @@ def main():
                 if sents is None:
                     continue
                 new[it["id"]] = {"audio": ah, "script": sh, "model": MODEL, "score": score,
-                                 "duration": round(info.duration, 2), "sentences": sents}
+                                 "duration": round(len(wav) / 16000, 2), "sentences": sents}
         if new != old:
             if new:
                 tp.write_text(json.dumps(new, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
