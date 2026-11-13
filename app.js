@@ -92,7 +92,6 @@ const TTS = {
 };
 if (TTS.ok) speechSynthesis.onvoiceschanged = () => TTS.pick();
 const SAY_ICON = '<svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
-const sayBtn = label => TTS.ok ? `<button class="q-say" type="button">${SAY_ICON}<span>${label}</span></button>` : "";
 
 /* ---------- list ---------- */
 function renderList() {
@@ -183,7 +182,6 @@ function renderBlind(body, it) {
       <div class="seg two mini" id="b-how"><button type="button" data-b="half">랜덤 절반</button><button type="button" data-b="all">전부</button></div>
       <button class="b-btn" id="b-shuffle" type="button">${how === "all" ? "다시 가리기" : "다시 섞기"}</button>
     </div>
-    <p class="hint">가려진 문장을 먼저 말해보고, 탭해서 확인</p>
     ${it.script.map((para, p) => `<p class="para">${sents.map((s, i) => [s, i]).filter(([s]) => s[0] === p)
         .map(([[, a, b], i]) => `<span class="sb${hide.has(i) ? " hid" : ""}">${md(para.slice(a, b))}</span>`).join("")}</p>`).join("")}`;
   body.querySelectorAll(".sb.hid").forEach(sp => sp.onclick = () => sp.classList.toggle("show"));
@@ -200,8 +198,7 @@ function renderDetail(it) {
   let mode = store.get("mode", "script");
   const root = $("#detail");
   root.innerHTML = `
-    <p class="question">${esc(it.question)}</p>
-    ${sayBtn("질문 듣기")}
+    <p class="question">${TTS.ok ? `<button class="q-say icon" type="button" aria-label="질문 듣기">${SAY_ICON}</button>` : ""}${esc(it.question)}</p>
     <div class="seg" role="tablist">
       <button data-m="script">전문</button>
       <button data-m="kw">키워드</button>
@@ -222,8 +219,7 @@ function renderDetail(it) {
     } else {
       body.className = "script";
       const tm = it.audio ? TIMINGS[it.id] : null;
-      body.innerHTML = (tm ? '<p class="hint">문장을 탭하면 그 부분부터 재생돼요</p>' : "")
-        + it.script.map((p, i) => `<p class="para">${tm ? renderPara(p, i, tm.sentences) : md(p)}</p>`).join("");
+      body.innerHTML = it.script.map((p, i) => `<p class="para">${tm ? renderPara(p, i, tm.sentences) : md(p)}</p>`).join("");
       if (tm) {
         const spans = [...body.querySelectorAll(".sen")];
         spans.forEach(sp => sp.onclick = async () => {

@@ -3,7 +3,7 @@
   --accent:#7a4a2a; --accent-ink:#fff; --accent-soft:#f1e7dd; --chip:#efebe4;
   --bar:rgba(246,244,239,.95);
   --safe-t:env(safe-area-inset-top,0px); --safe-b:env(safe-area-inset-bottom,0px);
-  --tab-h:58px; --player-h:96px;
+  --tab-h:58px; --player-h:76px;
 }
 @media (prefers-color-scheme: dark){
   :root{ --bg:#16140f; --card:#211e19; --ink:#f1ece4; --muted:#a39b90; --line:#332f28;
@@ -21,8 +21,7 @@ body.has-player .screen{padding-bottom:calc(var(--tab-h) + var(--player-h) + var
 .scroll{max-width:680px;margin:0 auto;padding:0 16px}
 
 /* top bar */
-.topbar{position:sticky;top:0;z-index:5;background:var(--bar);backdrop-filter:saturate(1.6) blur(14px);
-  -webkit-backdrop-filter:saturate(1.6) blur(14px);display:flex;align-items:center;gap:8px;
+.topbar{position:relative;display:flex;align-items:center;gap:8px;
   padding:10px 8px;max-width:680px;margin:0 auto;margin-top:calc(-1 * var(--safe-t));padding-top:calc(10px + var(--safe-t))}
 .topbar.big{display:block;padding:calc(18px + var(--safe-t)) 16px 12px;position:static;background:none;backdrop-filter:none;-webkit-backdrop-filter:none}
 .topbar.big h1{font-size:28px;margin:0;letter-spacing:-.02em}
@@ -50,7 +49,7 @@ body.has-player .screen{padding-bottom:calc(var(--tab-h) + var(--player-h) + var
 /* detail */
 .question{font-size:15px;color:var(--muted);font-style:italic;line-height:1.55;margin:6px 2px 16px}
 .seg{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--chip);border-radius:12px;padding:4px;
-  position:sticky;top:calc(60px + var(--safe-t));z-index:4;margin-bottom:16px}
+  margin-bottom:16px}
 .seg button{border:none;background:transparent;color:var(--muted);font-size:14px;font-weight:600;padding:9px 4px;border-radius:9px;cursor:pointer}
 .seg button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.1)}
 .script p{margin:0 0 14px;font-size:17px;line-height:1.75}
@@ -69,20 +68,20 @@ body.has-player .screen{padding-bottom:calc(var(--tab-h) + var(--player-h) + var
 /* player */
 .player{position:fixed;left:0;right:0;bottom:calc(var(--tab-h) + var(--safe-b));z-index:10;
   background:var(--bar);backdrop-filter:saturate(1.6) blur(16px);-webkit-backdrop-filter:saturate(1.6) blur(16px);
-  border-top:1px solid var(--line);padding:6px 16px 10px}
+  border-top:1px solid var(--line);padding:2px 16px 5px}
 .player > *{max-width:680px;margin:0 auto}
-.p-progress input{width:100%;margin:0;accent-color:var(--accent);height:22px}
-.p-row{display:flex;align-items:center;justify-content:center;gap:14px}
+.p-progress input{width:100%;margin:0;accent-color:var(--accent);height:18px}
+.p-row{display:flex;align-items:center;justify-content:center;gap:12px}
 .p-time{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;width:40px}
 .p-time.right{text-align:right}
-.p-btn{width:42px;height:42px;border:none;background:none;border-radius:50%;display:grid;place-items:center;cursor:pointer;color:var(--ink)}
-.p-btn svg{width:24px;height:24px}
+.p-btn{width:36px;height:36px;border:none;background:none;border-radius:50%;display:grid;place-items:center;cursor:pointer;color:var(--ink)}
+.p-btn svg{width:22px;height:22px}
 .p-btn:active{background:var(--chip)}
 .p-btn.on{color:var(--accent);background:var(--accent-soft)}
 .p-text{font-size:14px;font-weight:700}
-.p-play{width:52px;height:52px;border:none;border-radius:50%;background:var(--accent);color:var(--accent-ink);
+.p-play{width:44px;height:44px;border:none;border-radius:50%;background:var(--accent);color:var(--accent-ink);
   display:grid;place-items:center;cursor:pointer}
-.p-play svg{width:22px;height:22px;fill:currentColor}
+.p-play svg{width:19px;height:19px;fill:currentColor}
 .p-play:active{transform:scale(.95)}
 
 /* tabbar */
@@ -218,3 +217,9 @@ body.authing .tabbar{display:none}
 .b-btn:active{background:var(--chip)}
 .blind .sb.hid{filter:blur(6px);cursor:pointer;user-select:none;-webkit-user-select:none;transition:filter .2s;border-radius:4px}
 .blind .sb.hid.show{filter:none;background:var(--accent-soft)}
+
+/* 질문 앞 스피커 버튼 */
+.question .q-say.icon{width:30px;height:30px;padding:0;margin:0 8px 0 0;border-radius:50%;display:inline-grid;place-items:center;
+  vertical-align:-8px;font-style:normal;color:var(--ink)}
+.question .q-say.icon svg{width:16px;height:16px}
+.blind-bar{margin-bottom:16px}
