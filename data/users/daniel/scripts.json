@@ -133,6 +133,83 @@
           ]
         }
       ]
+    },
+    {
+      "id": "family",
+      "name": "가족",
+      "emoji": "👨‍👩‍👦",
+      "items": [
+        {
+          "id": "family-1",
+          "no": 1,
+          "type": "루틴",
+          "title": "가족과 하는 활동",
+          "question": "Tell me about your family. What do you usually do together, and who does the housework at home? Describe a typical week in detail.",
+          "audio": "audio/daniel/family-1-activities.mp3",
+          "script": [
+            "I live together with my family. On weekdays, my fam are busy to spend much time together. My wife and I have work and our son goes to school. We only get to talk briefly during dinner.",
+            "On weekends, we like to do house chores. **When it comes to housework**, I do most of the chores at home, which may be different from other family.",
+            "I load and run the dishwasher, vacuum the floors, and put things back. My wife mainly **takes care of the laundry**. She runs the washing machine, hangs up anything that can't go in the dryer and puts clean clothes away. Even then, the dryer and our clothing care system do much of the work. My son helps by **tidying up** his rooms.",
+            "Once all the chores are done, they lie down on the sofa and watches Netflix. And that's usually when they starts making a mess again.",
+            "So housework is like a **never-ending task**."
+          ],
+          "keywords": [
+            "가족과 같이 삶",
+            "평일: 다들 바쁨 (나·아내 일, 아들 학교) → 저녁 때 잠깐 대화",
+            "주말: 집안일 · 내가 대부분 함 (다른 집과 다를 수도)",
+            "나: 식기세척기 돌리기 · 청소기 · 물건 제자리",
+            "아내: 빨래 — 세탁기 · 건조기 안 되는 건 널기 · 개서 정리 (건조기·의류관리기가 많이 해줌)",
+            "아들: 자기 방 정리",
+            "끝나면 소파에서 넷플릭스 → 그때 다시 어지르기 시작",
+            "마무리: never-ending task"
+          ]
+        },
+        {
+          "id": "family-2",
+          "no": 2,
+          "type": "비교",
+          "title": "어릴 적 집과 이후 변화",
+          "question": "Describe the home you grew up in. What did it look like? How has that place changed since you moved out?",
+          "audio": "audio/daniel/family-2-childhood-home.mp3",
+          "script": [
+            "I grew up in the Korea traditional house, we call it 'Hanok'. There were two separated bed rooms and no living room. We used a outside balcony as a living room. It was not large and fancy but it felt warm because I have a lot of happy memory there with my family. Especially, I remember that all of furniture made of wood and it was very practical and simple which made the house quite cozy feel.",
+            "After we moved out, I never went back to see the place. It's been many years, so I'm not sure how the area has changed. Maybe it has been renovated or has become modern. Sometimes, I miss that place. It must be **sense of nostalgia**."
+          ],
+          "keywords": [
+            "어릴 적 한옥에서 자람",
+            "방 2개 · 거실 없음 → 바깥 마루(balcony)를 거실처럼",
+            "크거나 화려하진 않지만 → 가족과 행복한 기억 → 따뜻함",
+            "가구 전부 나무 → 실용적·심플 → cozy",
+            "이사 후 한 번도 안 가봄 · 동네가 어떻게 변했는지 모름",
+            "리모델링 됐거나 현대식으로 바뀌었을 듯",
+            "마무리: 가끔 그리움 → sense of nostalgia"
+          ]
+        },
+        {
+          "id": "family-3",
+          "no": 3,
+          "type": "경험",
+          "title": "가족과의 특별한 기억",
+          "question": "Tell me about a special memory you have with your family from when you were young. What happened, and why is it so memorable?",
+          "audio": "audio/daniel/family-3-memory.mp3",
+          "script": [
+            "When I was about nine, I loved playing with toy cars.",
+            "One day, I was playing with my friends and **completely lost track of time**. I was supposed to be home by six, but **before I knew it**, it was already past eight.",
+            "When I got home, my dad was really angry because I was more than two hours late. He broke my toy car so I couldn't play with it anymore.",
+            "I was so upset that I started crying. Later, my mom secretly bought me a new one to **cheer me up**. She also reminded me to come home on time.",
+            "**Looking back**, I can understand both of them. My dad wanted to teach me a lesson, while my mom wanted to comfort me. At the time, though, I was just happy to have a toy car again."
+          ],
+          "keywords": [
+            "9살쯤 장난감 자동차 좋아함",
+            "친구랑 놀다 시간 가는 줄 모름 · 6시까지 와야 했는데 8시 넘음",
+            "아빠 엄청 화남 (2시간 넘게 늦음) → 장난감 차 부숨",
+            "너무 속상해서 울음",
+            "엄마가 몰래 새 걸 사줌 (cheer me up) + 시간 지키라고 당부",
+            "Looking back: 아빠는 교훈, 엄마는 위로 → 둘 다 이해",
+            "그땐 그냥 차 다시 생겨서 좋았음"
+          ]
+        }
+      ]
     }
   ]
 }
