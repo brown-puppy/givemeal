@@ -1,0 +1,35 @@
+name: transcribe (verify)
+
+# 확인용 받아쓰기: 결과를 로그에만 출력하고 아무것도 커밋하지 않는다.
+# 녹음↔문항 매칭이 불확실할 때 사용 (AGENTS.md §5 참고).
+on:
+  workflow_dispatch:
+    inputs:
+      paths:
+        description: "오디오 경로, 공백 구분 (glob 가능). 예: audio/minji/*.mp3"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  transcribe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: .github/workflows/align.yml
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: whisper-small.en-v1
+      - run: which ffmpeg || (sudo apt-get update -q && sudo apt-get install -y -q ffmpeg)
+      - run: pip install "faster-whisper==1.2.1"
+      - name: Transcribe
+        env:
+          PATHS: ${{ inputs.paths }}
+        run: python3 scripts/transcribe.py $PATHS
