@@ -3,6 +3,8 @@ name: transcribe (verify)
 # 확인용 받아쓰기: 결과를 로그에만 출력하고 아무것도 커밋하지 않는다.
 # 녹음↔문항 매칭이 불확실할 때 사용 (AGENTS.md §5 참고).
 on:
+  push:
+    branches: ["verify-**"]     # 임시 브랜치에 push하면 audio/*/verify-* 를 받아씀
   workflow_dispatch:
     inputs:
       paths:
@@ -31,5 +33,5 @@ jobs:
       - run: pip install "faster-whisper==1.2.1"
       - name: Transcribe
         env:
-          PATHS: ${{ inputs.paths }}
+          PATHS: ${{ inputs.paths || 'audio/*/verify-*' }}
         run: python3 scripts/transcribe.py $PATHS
