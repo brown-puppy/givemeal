@@ -210,6 +210,37 @@
           ]
         }
       ]
+    },
+    {
+      "id": "music",
+      "name": "음악",
+      "emoji": "🎵",
+      "items": [
+        {
+          "id": "music-1",
+          "no": 1,
+          "type": "묘사",
+          "title": "좋아하는 음악·작곡가",
+          "question": "What kind of music do you like to listen to? Who is your favorite singer or composer? Why do you like them?",
+          "audio": "audio/daniel/music-1-favorite.mp3",
+          "script": [
+            "I listen to various kinds of music, but these days, I especially enjoy **classical piano music**.",
+            "What I like about it is its beautiful melodies and emotional expression. I find the sound of the piano calming, so I often listen to it when I feel stressed or need some time to relax.",
+            "**When it comes to** my favorite composer, I'm **a big fan of** Frédéric Chopin, a Polish composer and pianist.",
+            "The main reason I like him is his ability to express deep emotions through music. His melodies are beautiful, and his pieces often feel like they're **telling a story without words**.",
+            "I especially enjoy his nocturnes because they have gentle melodies and a peaceful atmosphere. That's why I always keep his music on my playlist."
+          ],
+          "keywords": [
+            "여러 음악 듣지만 요즘은 클래식 피아노",
+            "좋은 점: 아름다운 멜로디 + 감정 표현",
+            "피아노 소리 → calming · 스트레스 받거나 쉬고 싶을 때",
+            "최애 작곡가: 쇼팽 (폴란드 작곡가·피아니스트)",
+            "이유: 음악으로 깊은 감정 표현 · 말없이 이야기하는 느낌",
+            "특히 녹턴: 잔잔한 멜로디 + 평화로운 분위기",
+            "마무리: 항상 플레이리스트에"
+          ]
+        }
+      ]
     }
   ]
 }
